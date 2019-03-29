@@ -1,0 +1,47 @@
+puts "*** *** *** *** VAGRANT *** *** *** ***"
+if !Vagrant.has_plugin?('vagrant-faster')
+	puts "Install the vagrant-faster plugin. Enter the command: vagrant plugin install vagrant-faster"
+	exit
+end
+if !Vagrant.has_plugin?('vagrant-vbguest')
+	puts "Install the vagrant-vbguest plugin. Enter the command: vagrant plugin install vagrant-vbguest"
+	exit
+end
+if !Vagrant.has_plugin?('vagrant-winnfsd')
+	puts "Install the vagrant-winnfsd plugin. Enter the command: vagrant plugin install vagrant-winnfsd"
+	exit
+end
+if !Vagrant.has_plugin?('vagrant-multi-hostsupdater')
+	puts "Install the vagrant-multi-hostsupdater plugin. Enter the command: vagrant plugin install vagrant-multi-hostsupdater"
+	exit
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/xenial64"
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "forwarded_port", guest: 3306, host: 13306
+  config.vm.network "forwarded_port", guest: 2160, host: 2160
+  config.vm.network "forwarded_port", guest: 9000, host: 19000
+  config.vm.network "private_network", ip: "192.168.33.12"
+
+  config.vm.synced_folder "C:/www/", "/vagrant_data"
+  config.multihostsupdater.aliases = ["v_host1", "v_host2", "v_host3"]
+  
+  config.vm.provider "virtualbox" do |vb|
+    vb.cpus = 2
+    vb.memory = "4096"
+	vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+	vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+	vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+	vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
+  end
+  
+  config.vm.provision "bootstrap", type: "shell", path: "provision/bootstrap.sh"
+  config.vm.provision "php", type: "shell", path: "provision/php.sh"
+  config.vm.provision "mysql", type: "shell", path: "provision/mysql.sh"
+  config.vm.provision "devtools", type: "shell", path: "provision/devtools.sh"
+  config.vm.provision "apache_fastcgi", type: "shell", path: "provision/apache_fastcgi.sh"
+  config.vm.provision "scripts", type: "shell", path: "provision/scripts.sh"
+  config.vm.provision "upgrade", type: "shell", path: "provision/upgrade.sh"
+  config.vm.provision "restart", type: "shell", path: "provision/restart.sh"
+end
